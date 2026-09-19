@@ -13,10 +13,13 @@ async function mostrar_productos()
     {
         console.log(`${i + 1}. ${productos[i].nombre}: $${productos[i].precio}`);
     }
+    console.log("\n");
 }
 
 async function crear_pedido()
 {
+    let pedidoActual = [];
+    let seguirAgregando = true;
     do 
     {
         await mostrar_productos();
@@ -41,6 +44,28 @@ async function crear_pedido()
         seguirAgregando = respuesta.toLowerCase() === "s";
 
     } while (seguirAgregando);
+
+    pedidos.push(pedidoActual);
+    console.log("Pedido creado con éxito\n");
+}
+
+async function mostrar_pedidos()
+{
+    if (pedidos.length === 0)
+    {
+        console.log("No hay pedidos aún.");
+    }
+    else
+    {
+        for (let i = 0; i < pedidos.length; i++)
+        {
+            console.log(`Pedido ${i + 1}:`);
+            for (let item of pedidos[i])
+            {
+                console.log(`  - ${item.nombre} x${item.cantidad}: $${item.precio * item.cantidad}`);
+            }
+        }
+    }
 }
 
 async function cliente()
@@ -62,9 +87,10 @@ async function cliente()
                 await mostrar_productos();
                 break;
             case 2: // Crear pedido
-                
+                await crear_pedido();
                 break;
             case 3: // Mostrar pedidos actuales
+                await mostrar_pedidos();
                 break;
             case 4: // salir
                 break; // nada
