@@ -4,20 +4,20 @@ const { stdin: input, stdout: output } = require('process');
 const rl = readline.createInterface({ input, output }); // esto es para leer desde la consola
 
 let productos = [
-  { nombre: "Café Americano", precio: 15 },
-  { nombre: "Chocolate Caliente", precio: 18 },
-  { nombre: "Té", precio: 12 },
-  { nombre: "Agua de sabor", precio: 10 },
-  { nombre: "Refresco", precio: 15 },
-  { nombre: "Pan Dulce", precio: 10 },
-  { nombre: "Dona", precio: 12 },
-  { nombre: "Galletas", precio: 8 },
-  { nombre: "Sandwich", precio: 25 },
-  { nombre: "Torta", precio: 30 },
-  { nombre: "Papas fritas", precio: 15 },
-  { nombre: "Fruta picada", precio: 15 },
-  { nombre: "Yogurt", precio: 15 },
-  { nombre: "Gelatina", precio: 10 }
+    { nombre: "Café Americano", precio: 15, stock: 10 },
+    { nombre: "Chocolate Caliente", precio: 18, stock: 10 },
+    { nombre: "Té", precio: 12, stock: 10 },
+    { nombre: "Agua de sabor", precio: 10, stock: 10 },
+    { nombre: "Refresco", precio: 15, stock: 10 },
+    { nombre: "Pan Dulce", precio: 10, stock: 10 },
+    { nombre: "Dona", precio: 12, stock: 10 },
+    { nombre: "Galletas", precio: 8, stock: 10 },
+    { nombre: "Sandwich", precio: 25, stock: 10 },
+    { nombre: "Torta", precio: 30, stock: 10 },
+    { nombre: "Papas fritas", precio: 15, stock: 10 },
+    { nombre: "Fruta picada", precio: 15, stock: 10 },
+    { nombre: "Yogurt", precio: 15, stock: 10 },
+    { nombre: "Gelatina", precio: 10, stock: 10 }
 ];
 
 let pedidos = [];
@@ -25,39 +25,38 @@ let pedidos = [];
 let totalAcumulado = 0;
 
 async function agregarPedido(index) {
-  const producto = productos[index];
-  pedidos.push(producto);
-  totalAcumulado += producto.precio;
-  console.log(producto.nombre + " agregado. Total acumulado: $" + totalAcumulado);
+    const producto = productos[index];
+    pedidos.push(producto);
+    totalAcumulado += producto.precio;
+    console.log(producto.nombre + " agregado. Total acumulado: $" + totalAcumulado);
 }
 
 async function agregarProducto(nombre, precio) {
-  productos.push({ nombre: nombre, precio: precio });
-  console.log(nombre + " agregado al menú.");
+    productos.push({ nombre: nombre, precio: precio });
+    console.log(nombre + " agregado al menú.");
 }
 
 async function menuCaja() {
-  console.log("\n===== CAJA =====");
-  console.log("1. Ver productos");
-  console.log("2. Agregar producto al pedido");
-  console.log("3. Agregar nuevo producto al menú");
-  console.log("4. Ver lista de pedidos y total acumulado");
-  console.log("5. Salir");
+    console.log("\n===== CAJA =====");
+    console.log("1. Ver productos");
+    console.log("2. Agregar producto al pedido");
+    console.log("3. Agregar nuevo producto al menú");
+    console.log("4. Ver lista de pedidos y total acumulado");
+    console.log("5. Salir");
 }
 
 async function caja() {
     let opcion = 0;
-    do
-    {
+    do {
         await menuCaja();
         opcion = await rl.question("Elige una opción: ");
         opcion = opcion.trim();
 
         if (opcion === "1") {
-            await mostrar_productos();
+            await mostrar_productos(true);
 
         } else if (opcion === "2") {
-            await mostrar_productos();
+            await mostrar_productos(false);
             let num = await rl.question("Número de producto: ");
             const index = parseInt(num) - 1;
             if (index >= 0 && index < productos.length) {
@@ -84,28 +83,25 @@ async function caja() {
     } while (opcion !== "5");
 }
 
-async function mostrar_productos()
-{
+async function mostrar_productos(mostrarAgotados) {
     console.log("Lista de productos disponibles:");
-    for (let i = 0; i < productos.length; i++)
-    {
-        console.log(`${i + 1}. ${productos[i].nombre}: $${productos[i].precio}`);
+    for (let i = 0; i < productos.length; i++) {
+        if (productos[i].stock > 0 || mostrarAgotados) {
+            console.log(`${i + 1}. ${productos[i].nombre}: $${productos[i].precio}. Stock disponible: ${productos[i].stock} unidades disponibles.`);
+        }
     }
     console.log("\n");
 }
 
-async function crear_pedido()
-{
+async function crear_pedido() {
     let pedidoActual = [];
     let seguirAgregando = true;
-    do 
-    {
-        await mostrar_productos();
+    do {
+        await mostrar_productos(false);
 
         let indiceProducto = Number(await rl.question("Elige el número del producto: ")) - 1;
 
-        if (indiceProducto < 0 || indiceProducto >= productos.length)
-        {
+        if (indiceProducto < 0 || indiceProducto >= productos.length || productos[indiceProducto].stock <= 0) {
             console.error("Producto inválido");
             continue;
         }
@@ -118,6 +114,8 @@ async function crear_pedido()
             cantidad: cantidad
         });
 
+        productos[indiceProducto].stock -= cantidad;
+
         let respuesta = await rl.question("¿Agregar otro producto? (s/n): ");
         seguirAgregando = respuesta.toLowerCase() === "s";
 
@@ -127,19 +125,14 @@ async function crear_pedido()
     console.log("Pedido creado con éxito\n");
 }
 
-async function mostrar_pedidos()
-{
-    if (pedidos.length === 0)
-    {
+async function mostrar_pedidos() {
+    if (pedidos.length === 0) {
         console.log("No hay pedidos aún.");
     }
-    else
-    {
-        for (let i = 0; i < pedidos.length; i++)
-        {
+    else {
+        for (let i = 0; i < pedidos.length; i++) {
             console.log(`Pedido ${i + 1}:`);
-            for (let item of pedidos[i])
-            {
+            for (let item of pedidos[i]) {
                 console.log(`  - ${item.nombre} x${item.cantidad}: $${item.precio * item.cantidad}`);
             }
         }
@@ -163,10 +156,11 @@ async function cocina() {
             case "1":
                 let nombre = await rl.question("Nombre del nuevo producto: ");
                 let precio = await rl.question("Precio: ");
+                let stock = await rl.question("");
                 await agregarProducto(nombre, parseFloat(precio));
                 break;
             case "2":
-                await mostrar_productos();
+                await mostrar_productos(true);
                 break;
             case "3":
                 await editarProducto();
@@ -191,9 +185,7 @@ async function editarProducto() {
     }
 
     console.log("\n===== EDITAR PRODUCTOS =====\n");
-    for (let i = 0; i < productos.length; i++) {
-        console.log((i + 1) + ". " + productos[i].nombre + " - $" + productos[i].precio);
-    }
+    await mostrar_productos(true);
 
     let numero = await rl.question("\nIngresa el número del producto que quieres editar: ");
     let posicion = parseInt(numero) - 1;
@@ -201,9 +193,10 @@ async function editarProducto() {
     if (posicion >= 0 && posicion < productos.length) {
         let nombre = await rl.question("Ingrese el nuevo nombre del producto: ");
         let precio = await rl.question("Ingrese el nuevo precio del producto: ");
-
+        let stock = await rl.question("Ingrese el nuevo stock del producto: ");
         productos[posicion].nombre = nombre;
         productos[posicion].precio = parseFloat(precio);
+        productos[posicion].stock = Number(stock);
 
         console.log("\nProducto editado correctamente.\n");
     } else {
@@ -233,11 +226,9 @@ async function eliminarProducto() {
     }
 }
 
-async function cliente()
-{
+async function cliente() {
     let opcion = 0;
-    do
-    {
+    do {
         console.log("Elige la opción deseada:");
         console.log("1. Consultar productos");
         console.log("2. Crear pedido");
@@ -246,10 +237,9 @@ async function cliente()
         opcion = Number(await rl.question("Elige la opción: "));
         console.log(`se detectó ${opcion}`);
         console.log("\n");
-        switch (opcion)
-        {
+        switch (opcion) {
             case 1: // Consultar productos
-                await mostrar_productos();
+                await mostrar_productos(false);
                 break;
             case 2: // Crear pedido
                 await crear_pedido();
@@ -266,11 +256,9 @@ async function cliente()
     } while (opcion != 4);
 }
 
-async function main() 
-{
+async function main() {
     let opcion = 0;
-    do 
-    {
+    do {
         console.log("Escribe la opción deseada:");
         console.log("1. Caja");
         console.log("2. Cocina");
@@ -279,8 +267,7 @@ async function main()
         opcion = Number(await rl.question("Elige la opción: "));
         console.log(`se detectó ${opcion}`);
         console.log("\n");
-        switch (opcion) 
-        {
+        switch (opcion) {
             case 1: // Caja
                 await caja();
                 break;
