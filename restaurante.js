@@ -24,19 +24,19 @@ let pedidos = [];
 
 let totalAcumulado = 0;
 
-async function agregarPedido(index) {
+/* function agregarPedido(index) {
     const producto = productos[index];
     pedidos.push(producto);
     totalAcumulado += producto.precio;
     console.log(producto.nombre + " agregado. Total acumulado: $" + totalAcumulado);
-}
+} */
 
-async function agregarProducto(nombre, precio) {
+function agregarProducto(nombre, precio) {
     productos.push({ nombre: nombre, precio: precio });
     console.log(nombre + " agregado al menú.");
 }
 
-async function menuCaja() {
+function menuCaja() {
     console.log("\n===== CAJA =====");
     console.log("1. Ver productos");
     console.log("2. Agregar producto al pedido");
@@ -53,10 +53,10 @@ async function caja() {
         opcion = opcion.trim();
 
         if (opcion === "1") {
-            await mostrar_productos(true);
+            mostrar_productos(true);
 
         } else if (opcion === "2") {
-            await mostrar_productos(false);
+            mostrar_productos(false);
             let num = await rl.question("Número de producto: ");
             const index = parseInt(num) - 1;
             if (index >= 0 && index < productos.length) {
@@ -71,7 +71,7 @@ async function caja() {
             await agregarProducto(nombre, parseFloat(precio));
 
         } else if (opcion === "4") {
-            await mostrar_pedidos();
+            mostrar_pedidos();
 
         } else if (opcion === "5") {
             console.log("\nTotal final: $" + totalAcumulado);
@@ -83,7 +83,7 @@ async function caja() {
     } while (opcion !== "5");
 }
 
-async function mostrar_productos(mostrarAgotados) {
+function mostrar_productos(mostrarAgotados) {
     console.log("Lista de productos disponibles:");
     for (let i = 0; i < productos.length; i++) {
         if (productos[i].stock > 0 || mostrarAgotados) {
@@ -93,11 +93,38 @@ async function mostrar_productos(mostrarAgotados) {
     console.log("\n");
 }
 
-async function crear_pedido() {
+function mostrar_promociones() {
+    let d = new Date();
+    if (d.getDay() == 2) // mostrar bebidas los martes
+    {
+        let bebidas = productos.filter(producto => {
+            return producto.categoria === "bebidas";
+        });
+        console.log("Los siguientes productos tienen descuento del 2x1:");
+        bebidas.forEach(producto => {
+            console.log(`Nombre: ${producto.nombre}, precio: $${producto.precio}`);
+        });
+    }
+    else if (d.getDay() == 3) // mostrar postres los miércoles
+    {
+        let postres = productos.filter(producto => {
+            return producto.categoria === "postres";
+        });
+        console.log("Los siguientes productos tienen descuento del 2x1:");
+        postres.forEach(producto => {
+            console.log(`Nombre: ${producto.nombre}, precio: $${producto.precio}`);
+        });
+    }
+    else {
+        console.log("El día de hoy no hay promociones.");
+    }
+}
+
+async function agregarPedido() {
     let pedidoActual = [];
     let seguirAgregando = true;
     do {
-        await mostrar_productos(false);
+        mostrar_productos(false);
 
         let indiceProducto = Number(await rl.question("Elige el número del producto: ")) - 1;
 
@@ -125,7 +152,7 @@ async function crear_pedido() {
     console.log("Pedido creado con éxito\n");
 }
 
-async function mostrar_pedidos() {
+function mostrar_pedidos() {
     if (pedidos.length === 0) {
         console.log("No hay pedidos aún.");
     }
@@ -160,7 +187,7 @@ async function cocina() {
                 await agregarProducto(nombre, parseFloat(precio));
                 break;
             case "2":
-                await mostrar_productos(true);
+                mostrar_productos(true);
                 break;
             case "3":
                 await editarProducto();
@@ -185,7 +212,7 @@ async function editarProducto() {
     }
 
     console.log("\n===== EDITAR PRODUCTOS =====\n");
-    await mostrar_productos(true);
+    mostrar_productos(true);
 
     let numero = await rl.question("\nIngresa el número del producto que quieres editar: ");
     let posicion = parseInt(numero) - 1;
@@ -239,13 +266,13 @@ async function cliente() {
         console.log("\n");
         switch (opcion) {
             case 1: // Consultar productos
-                await mostrar_productos(false);
+                mostrar_productos(false);
                 break;
             case 2: // Crear pedido
-                await crear_pedido();
+                await agregarPedido();
                 break;
             case 3: // Mostrar pedidos actuales
-                await mostrar_pedidos();
+                mostrar_pedidos();
                 break;
             case 4: // salir
                 break; // nada
@@ -286,5 +313,7 @@ async function main() {
     } while (opcion != 4);
     rl.close();
 }
+
+console.clear();
 
 main();
