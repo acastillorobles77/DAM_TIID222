@@ -4,32 +4,25 @@ const { stdin: input, stdout: output } = require('process');
 const rl = readline.createInterface({ input, output }); // esto es para leer desde la consola
 
 let productos = [
-    { nombre: "Café Americano", precio: 15, stock: 10 },
-    { nombre: "Chocolate Caliente", precio: 18, stock: 10 },
-    { nombre: "Té", precio: 12, stock: 10 },
-    { nombre: "Agua de sabor", precio: 10, stock: 10 },
-    { nombre: "Refresco", precio: 15, stock: 10 },
-    { nombre: "Pan Dulce", precio: 10, stock: 10 },
-    { nombre: "Dona", precio: 12, stock: 10 },
-    { nombre: "Galletas", precio: 8, stock: 10 },
-    { nombre: "Sandwich", precio: 25, stock: 10 },
-    { nombre: "Torta", precio: 30, stock: 10 },
-    { nombre: "Papas fritas", precio: 15, stock: 10 },
-    { nombre: "Fruta picada", precio: 15, stock: 10 },
-    { nombre: "Yogurt", precio: 15, stock: 10 },
-    { nombre: "Gelatina", precio: 10, stock: 10 }
+    { nombre: "Café Americano", precio: 15, stock: 10, categoria: "Bebida" },
+    { nombre: "Chocolate Caliente", precio: 18, stock: 3, categoria: "Bebida" },
+    { nombre: "Té", precio: 12, stock: 5, categoria: "Bebida" },
+    { nombre: "Agua de sabor", precio: 10, stock: 6, categoria: "Bebida" },
+    { nombre: "Refresco", precio: 15, stock: 7, categoria: "Bebida" },
+    { nombre: "Pan Dulce", precio: 10, stock: 14, categoria: "Postre" },
+    { nombre: "Dona", precio: 12, stock: 20, categoria: "Postre" },
+    { nombre: "Galletas", precio: 8, stock: 9, categoria: "Postre" },
+    { nombre: "Sandwich", precio: 25, stock: 21, categoria: "Postre" },
+    { nombre: "Torta", precio: 30, stock: 13, categoria: "Postre" },
+    { nombre: "Papas fritas", precio: 15, stock: 10, categoria: "Postre" },
+    { nombre: "Fruta picada", precio: 15, stock: 2, categoria: "Postre" },
+    { nombre: "Yogurt", precio: 15, stock: 4, categoria: "Postre" },
+    { nombre: "Gelatina", precio: 10, stock: 1, categoria: "Postre" }
 ];
 
 let pedidos = [];
 
 let totalAcumulado = 0;
-
-/* function agregarPedido(index) {
-    const producto = productos[index];
-    pedidos.push(producto);
-    totalAcumulado += producto.precio;
-    console.log(producto.nombre + " agregado. Total acumulado: $" + totalAcumulado);
-} */
 
 function agregarProducto(nombre, precio) {
     productos.push({ nombre: nombre, precio: precio });
@@ -48,7 +41,7 @@ function menuCaja() {
 async function caja() {
     let opcion = 0;
     do {
-        await menuCaja();
+        menuCaja();
         opcion = await rl.question("Elige una opción: ");
         opcion = opcion.trim();
 
@@ -68,7 +61,7 @@ async function caja() {
         } else if (opcion === "3") {
             let nombre = await rl.question("Nombre del nuevo producto: ");
             let precio = await rl.question("Precio: ");
-            await agregarProducto(nombre, parseFloat(precio));
+            agregarProducto(nombre, parseFloat(precio));
 
         } else if (opcion === "4") {
             mostrar_pedidos();
@@ -86,38 +79,48 @@ async function caja() {
 function mostrar_productos(mostrarAgotados) {
     console.log("Lista de productos disponibles:");
     for (let i = 0; i < productos.length; i++) {
-        if (productos[i].stock > 0 || mostrarAgotados) {
+        if (productos[i].stock > 0) {
             console.log(`${i + 1}. ${productos[i].nombre}: $${productos[i].precio}. Stock disponible: ${productos[i].stock} unidades disponibles.`);
         }
+        else if (mostrarAgotados) {
+            console.log(`${i + 1}. ${productos[i].nombre}: $${productos[i].precio}. ** Producto agotado **`);
+        }
     }
+    mostrar_promociones();
     console.log("\n");
 }
 
 function mostrar_promociones() {
     let d = new Date();
-    if (d.getDay() == 2) // mostrar bebidas los martes
+    console.log(`hoy es ${d.getDay()}`);
+    if (d.getDay() == 2) // mostrar Bebida los martes
     {
-        let bebidas = productos.filter(producto => {
-            return producto.categoria === "bebidas";
+        let Bebida = productos.filter(producto => {
+            return producto.categoria === "Bebida";
         });
         console.log("Los siguientes productos tienen descuento del 2x1:");
-        bebidas.forEach(producto => {
+        Bebida.forEach(producto => {
             console.log(`Nombre: ${producto.nombre}, precio: $${producto.precio}`);
         });
     }
-    else if (d.getDay() == 3) // mostrar postres los miércoles
+    else if (d.getDay() == 3) // mostrar Postre los miércoles
     {
-        let postres = productos.filter(producto => {
-            return producto.categoria === "postres";
+        let Postre = productos.filter(producto => {
+            return producto.categoria === "Postre";
         });
         console.log("Los siguientes productos tienen descuento del 2x1:");
-        postres.forEach(producto => {
+        Postre.forEach(producto => {
             console.log(`Nombre: ${producto.nombre}, precio: $${producto.precio}`);
         });
     }
     else {
         console.log("El día de hoy no hay promociones.");
     }
+}
+
+function productoEnPromocion(index) {
+    let d = new Date();
+    return (productos[index].categoria === "Bebida" && d.getDay() == 2) || (productos[index].categoria === "Postre" && d.getDay() == 3);
 }
 
 async function agregarPedido() {
@@ -134,6 +137,11 @@ async function agregarPedido() {
         }
 
         let cantidad = Number(await rl.question("¿Cuántos quieres? "));
+
+        if (productoEnPromocion(indiceProducto)) {
+            console.log("Este producto está en promoción al 2x1 el dia de hoy");
+            cantidad *= 2;
+        }
 
         pedidoActual.push({
             nombre: productos[indiceProducto].nombre,
@@ -160,6 +168,7 @@ function mostrar_pedidos() {
         for (let i = 0; i < pedidos.length; i++) {
             console.log(`Pedido ${i + 1}:`);
             for (let item of pedidos[i]) {
+
                 console.log(`  - ${item.nombre} x${item.cantidad}: $${item.precio * item.cantidad}`);
             }
         }
@@ -184,7 +193,7 @@ async function cocina() {
                 let nombre = await rl.question("Nombre del nuevo producto: ");
                 let precio = await rl.question("Precio: ");
                 let stock = await rl.question("");
-                await agregarProducto(nombre, parseFloat(precio));
+                agregarProducto(nombre, parseFloat(precio));
                 break;
             case "2":
                 mostrar_productos(true);
