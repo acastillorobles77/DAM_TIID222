@@ -24,9 +24,9 @@ let pedidos = [];
 
 let totalAcumulado = 0;
 
-function agregarProducto(nombre, precio) {
-    productos.push({ nombre: nombre, precio: precio });
-    console.log(nombre + " agregado al menú.");
+function agregarProducto(nombre, precio, categoria, stock = 10) {
+    productos.push({ nombre: nombre, precio: precio, categoria: categoria, stock: stock });
+    console.log(`${nombre} agregado al menú.`);
 }
 
 function menuCaja() {
@@ -34,46 +34,76 @@ function menuCaja() {
     console.log("1. Ver productos");
     console.log("2. Agregar producto al pedido");
     console.log("3. Agregar nuevo producto al menú");
-    console.log("4. Ver lista de pedidos y total acumulado");
-    console.log("5. Salir");
+    console.log("4. Ver lista de pedidos");
+    console.log("5. Cobrar y ver total (Subtotal, IVA y Total)");
+    console.log("6. Salir");
+}
+
+function calcularCuentaCaja() {
+    if (pedidos.length === 0) {
+        console.log("\nNo hay productos en el pedido actual.");
+        return;
+    }
+
+    const listaItems = pedidos.flat();
+
+    const subtotal = listaItems.reduce((suma, item) => {
+        const { precio, cantidad = 1 } = item;
+        return suma + (precio * cantidad);
+    }, 0);
+
+    const iva = subtotal * 0.16;
+    const total = subtotal + iva;
+
+    console.log("\n====== DESGLOSE DE CUENTA ======");
+    console.log(`Subtotal: $${subtotal.toFixed(2)}`);
+    console.log(`IVA(16 %): $${iva.toFixed(2)}`);
+    console.log(`Total a pagar: $${total.toFixed(2)}`);
+    console.log("=================================");
 }
 
 async function caja() {
-    let opcion = 0;
+    let opcion = "";
     do {
-        menuCaja();
+        await menuCaja();
         opcion = await rl.question("Elige una opción: ");
         opcion = opcion.trim();
 
         if (opcion === "1") {
             mostrar_productos(true);
 
-        } else if (opcion === "2") {
-            mostrar_productos(false);
-            let num = await rl.question("Número de producto: ");
-            const index = parseInt(num) - 1;
-            if (index >= 0 && index < productos.length) {
-                await agregarPedido(index);
-            } else {
-                console.log("Producto no válido.");
+        } else if (opcion === "2" && pedidos.length > 0) {
+            console.log(`Actualmente hay ${pedidos.length} pedidos.`);
+            let indexPedido = Number(await rl.question("Escribe el número del pedido a modificar: ")) - 1;
+            if (indexPedido >= 0 && indexPedido < pedidos.length) {
+                await agregarPedido(indexPedido);
             }
+            else {
+                console.log("Pedido no encontrado.");
+            }
+
 
         } else if (opcion === "3") {
             let nombre = await rl.question("Nombre del nuevo producto: ");
             let precio = await rl.question("Precio: ");
-            agregarProducto(nombre, parseFloat(precio));
+            let categoria = await rl.question("Escribe la categoría del producto (Bebida, Postre): ");
+            let stock = await rl.question("Stock inicial: ");
+            agregarProducto(nombre, parseFloat(precio), categoria, Number(stock));
 
         } else if (opcion === "4") {
             mostrar_pedidos();
 
         } else if (opcion === "5") {
-            console.log("\nTotal final: $" + totalAcumulado);
+            calcularCuentaCaja();
+
+        } else if (opcion === "6") {
+            console.log("Saliendo de caja...");
 
         } else {
             console.log("Opción no válida.");
         }
 
-    } while (opcion !== "5");
+    } while (opcion !== "6");
 }
 
 function mostrar_productos(mostrarAgotados) {
@@ -123,8 +153,11 @@ function productoEnPromocion(index) {
     return (productos[index].categoria === "Bebida" && d.getDay() == 2) || (productos[index].categoria === "Postre" && d.getDay() == 3);
 }
 
-async function agregarPedido() {
+async function agregarPedido(num = -1) {
     let pedidoActual = [];
+    if (num >= 0) {
+        pedidoActual = pedidos[num];
+    }
     let seguirAgregando = true;
     do {
         mostrar_productos(false);
@@ -137,6 +170,11 @@ async function agregarPedido() {
         }
 
         let cantidad = Number(await rl.question("¿Cuántos quieres? "));
+
+        if (cantidad > productos[indiceProducto].stock) {
+            console.log(`No hay suficiente stock. Solo quedan ${productos[indiceProducto].stock}`);
+            continue;
+        }
 
         if (productoEnPromocion(indiceProducto)) {
             console.log("Este producto está en promoción al 2x1 el dia de hoy");
@@ -156,8 +194,14 @@ async function agregarPedido() {
 
     } while (seguirAgregando);
 
-    pedidos.push(pedidoActual);
-    console.log("Pedido creado con éxito\n");
+    if (num < 0) {
+        pedidos.push(pedidoActual);
+        console.log("Pedido creado con éxito\n");
+    }
+    else {
+        pedidos[num] = pedidoActual;
+        console.log("El pedido ha sido actualizado exitosamente\n");
+    }
 }
 
 function mostrar_pedidos() {
@@ -175,43 +219,99 @@ function mostrar_pedidos() {
     }
 }
 
+// función para buscar productos
+async function buscarProducto() {
+    let opcionn = "";
+    do {
+        console.log("==== BUSCAR PRODUCTOS ====")
+        console.log("1. Productos caros")
+        console.log("2. Productos baratos")
+        console.log("3. Bebidas")
+        console.log("4. Postres")
+        console.log("5. Regresar al menu")
+
+        opcionn = await rl.question("Seleccione una opcion: ");
+        switch (opcionn) {
+            case "1":
+                let productosCaros = productos.filter(producto => producto.precio > 20);
+                console.log("Productos caros:");
+                productosCaros.forEach(producto => {
+                    console.log(producto.nombre + " - $" + producto.precio);
+                });
+                break;
+            case "2":
+                let productosBaratos = productos.filter(producto => producto.precio <= 20);
+                console.log("Productos baratos:");
+                productosBaratos.forEach(producto => {
+                    console.log(producto.nombre + " - $" + producto.precio);
+                });
+                break;
+            case "3":
+                let bebidas = productos.filter(producto => producto.categoria === "Bebida");
+                console.log("Bebidas:");
+                bebidas.forEach(producto => {
+                    console.log(producto.nombre + " - $" + producto.precio);
+                });
+                break;
+            case "4":
+                let postres = productos.filter(producto => producto.categoria === "Postre");
+                console.log("Postres:");
+                postres.forEach(producto => {
+                    console.log(producto.nombre + " - $" + producto.precio);
+                });
+                break;
+            case "5": // regresar al menú
+                break;
+            default:
+                console.log("Opcion invalida");
+                break;
+        }
+    } while (opcionn !== "5");
+}
+
 async function cocina() {
     let opcion = "";
     do {
-        console.log("\n==== SISTEMA DE COCINA =====\n");
+        console.log("\n==== SISTEMA DE COCINA =====\n")
         console.log("1. Agregar producto");
         console.log("2. Mostrar productos");
         console.log("3. Editar producto");
-        console.log("4. Eliminar producto");
-        console.log("5. Salir");
+        console.log("4. Buscar producto")
+        console.log("5. Eliminar producto");
+        console.log("6. Salir");
 
         opcion = await rl.question("Seleccione una opción: ");
         console.log(`cocina: se detectó ${opcion}`);
 
         switch (opcion) {
+
             case "1":
                 let nombre = await rl.question("Nombre del nuevo producto: ");
                 let precio = await rl.question("Precio: ");
-                let stock = await rl.question("");
-                agregarProducto(nombre, parseFloat(precio));
+                let categoria = await rl.question("Escribe la categoría del producto (Bebida, Postre): ");
+                let stock = await rl.question("Stock inicial: ");
+                agregarProducto(nombre, parseFloat(precio), categoria, Number(stock));
                 break;
             case "2":
-                mostrar_productos(true);
+                mostrarProductos();
                 break;
             case "3":
                 await editarProducto();
                 break;
             case "4":
-                await eliminarProducto();
+                await buscarProducto();
                 break;
             case "5":
+                await eliminarProducto();
+                break;
+            case "6":
                 console.log("Saliendo del sistema...");
                 break;
             default:
                 console.log("Opción inválida. Intente de nuevo.");
                 break;
         }
-    } while (opcion !== "5");
+    } while (opcion !== "6");
 }
 
 async function editarProducto() {
@@ -230,9 +330,11 @@ async function editarProducto() {
         let nombre = await rl.question("Ingrese el nuevo nombre del producto: ");
         let precio = await rl.question("Ingrese el nuevo precio del producto: ");
         let stock = await rl.question("Ingrese el nuevo stock del producto: ");
+        let categoria = await rl.question("Ingrese la categoría del producto (Bebida, Postre): ");
         productos[posicion].nombre = nombre;
         productos[posicion].precio = parseFloat(precio);
         productos[posicion].stock = Number(stock);
+        productos[posicion].stock = categoria;
 
         console.log("\nProducto editado correctamente.\n");
     } else {
